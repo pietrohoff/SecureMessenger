@@ -1,0 +1,9 @@
+services:
+  secure-messenger:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app/data:/app/app/data
+    environment:
+      - SM_DB=/app/app/data/secure_messenger.db

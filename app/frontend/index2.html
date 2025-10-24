@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Secure Messenger</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:20px;max-width:960px}
+    h1{margin-top:0}
+    .card{border:1px solid #ddd;border-radius:12px;padding:16px;margin:12px 0;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+    .row{display:flex;gap:12px;flex-wrap:wrap}
+    .col{flex:1;min-width:260px}
+    input,select,textarea,button{padding:8px;border-radius:8px;border:1px solid #bbb;width:100%}
+    button{cursor:pointer}
+    .muted{color:#666;font-size:.9em}
+    .list{max-height:260px;overflow:auto;border:1px dashed #ddd;border-radius:8px;padding:6px}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;background:#efefef;margin-right:6px}
+    .mono{font-family: ui-monospace,Consolas,Monaco,monospace;font-size:12px;white-space:pre-wrap}
+  </style>
+</head>
+<body>
+  <h1>🔐 Secure Messenger — Web</h1>
+  <div class="card">
+    <div class="row">
+      <div class="col">
+        <button id="btnInit">Inicializar CA</button>
+      </div>
+      <div class="col">
+        <div class="row">
+          <div class="col"><input id="newUser" placeholder="Novo usuário (ex.: Alice)"></div>
+          <div class="col"><button id="btnAddUser">Criar usuário</button></div>
+        </div>
+      </div>
+      <div class="col">
+        <button id="btnReloadUsers">Atualizar lista de usuários</button>
+      </div>
+    </div>
+    <div class="muted" id="status"></div>
+  </div>
+
+  <div class="card">
+    <h3>Usuários</h3>
+    <div id="users" class="list mono"></div>
+  </div>
+
+  <div class="card">
+    <h3>Enviar Mensagem</h3>
+    <div class="row">
+      <div class="col"><input id="sender" placeholder="Remetente (ex.: Alice)"></div>
+      <div class="col"><input id="recipients" placeholder="Destinatários (ex.: Bob,Carol)"></div>
+    </div>
+    <div class="row">
+      <div class="col"><input id="subject" placeholder="Assunto"></div>
+    </div>
+    <textarea id="body" rows="4" placeholder="Corpo da mensagem"></textarea>
+    <div class="row">
+      <div class="col"><button id="btnSend">Enviar</button></div>
+    </div>
+    <div class="muted" id="sendStatus"></div>
+  </div>
+
+  <div class="card">
+    <h3>Inbox</h3>
+    <div class="row">
+      <div class="col"><input id="inboxUser" placeholder="Usuário (ex.: Bob)"></div>
+      <div class="col"><button id="btnInbox">Listar</button></div>
+    </div>
+    <div id="inbox" class="list mono"></div>
+  </div>
+
+  <div class="card">
+    <h3>Ler Mensagem</h3>
+    <div class="row">
+      <div class="col"><input id="readUser" placeholder="Usuário (ex.: Bob)"></div>
+      <div class="col"><input id="readId" placeholder="ID da mensagem"></div>
+      <div class="col"><button id="btnRead">Ler</button></div>
+    </div>
+    <div id="readOut" class="mono"></div>
+  </div>
+
+  <div class="card">
+    <h3>Auditoria</h3>
+    <div class="row">
+      <div class="col"><button id="btnAudit">Listar eventos</button></div>
+      <div class="col"><button id="btnAuditVerify">Verificar assinatura do log</button></div>
+    </div>
+    <div id="auditOut" class="mono"></div>
+  </div>
+
+<script>
+const $ = (id)=>document.getElementById(id);
+const api = (p,opts)=>fetch(p,opts).then(async r=>{
+  if(!r.ok){throw new Error((await r.text())||r.status);}
+  return r.json();
+});
+
+$("btnInit").onclick = async ()=>{
+  $("status").textContent = "Inicializando CA...";
+  try{ await api("/init-ca",{method:"POST"});
+       $("status").textContent = "CA pronta."; }
+  catch(e){ $("status").textContent = "Erro: "+e.message; }
+};
+
+$("btnAddUser").onclick = async ()=>{
+  const name = $("newUser").value.trim();
+  if(!name) return;
+  $("status").textContent = "Criando usuário...";
+  try{ await api("/users",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name})});
+       $("status").textContent = `Usuário ${name} criado.`; $("newUser").value=""; loadUsers(); }
+  catch(e){ $("status").textContent = "Erro: "+e.message; }
+};
+
+$("btnReloadUsers").onclick = ()=> loadUsers();
+async function loadUsers(){
+  try{ const j = await api("/users"); $("users").textContent = (j.users||[]).join("\n"); }
+  catch(e){ $("users").textContent = "Erro: "+e.message; }
+}
+loadUsers();
+
+$("btnSend").onclick = async ()=>{
+  const sender = $("sender").value.trim();
+  const to = $("recipients").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const subject = $("subject").value.trim();
+  const body = $("body").value;
+  $("sendStatus").textContent = "Enviando...";
+  try{ const j = await api("/send",{method:"POST", headers:{"Content-Type":"application/json"},
+                                    body: JSON.stringify({sender, to, subject, body})});
+       $("sendStatus").textContent = "Enviado! ID="+j.message_id; }
+  catch(e){ $("sendStatus").textContent = "Erro: "+e.message; }
+};
+
+$("btnInbox").onclick = async ()=>{
+  const user = $("inboxUser").value.trim();
+  try{ const j = await api("/inbox/"+encodeURIComponent(user));
+       $("inbox").textContent = j.inbox.map(r=>`#${r.id}  ${new Date(r.timestamp*1000).toISOString()}  ${r.sender} — ${r.subject}`).join("\n") || "Inbox vazia."; }
+  catch(e){ $("inbox").textContent = "Erro: "+e.message; }
+};
+
+$("btnRead").onclick = async ()=>{
+  const user = $("readUser").value.trim();
+  const id = $("readId").value.trim();
+  try{ const j = await api(`/read/${encodeURIComponent(user)}/${encodeURIComponent(id)}`);
+       $("readOut").textContent = JSON.stringify(j.meta,null,2)+"\n\n"+j.body; }
+  catch(e){ $("readOut").textContent = "Erro: "+e.message; }
+};
+
+$("btnAudit").onclick = async ()=>{
+  try{ const j = await api("/audit"); $("auditOut").textContent = JSON.stringify(j.audit,null,2); }
+  catch(e){ $("auditOut").textContent = "Erro: "+e.message; }
+};
+
+$("btnAuditVerify").onclick = async ()=>{
+  try{ const j = await api("/audit/verify"); $("auditOut").textContent = "Audit íntegro e assinado? "+j.ok; }
+  catch(e){ $("auditOut").textContent = "Erro: "+e.message; }
+};
+</script>
+</body>
+</html>

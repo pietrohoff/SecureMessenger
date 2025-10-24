@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Secure Messenger • Kids Mode (Fix)</title>
+  <style>
+    :root{
+      --bg:#0b0d10; --panel:#12161b; --panel-2:#151a21; --text:#eaf2ff; --muted:#96a3b6;
+      --brand:#7cf7d3; --brand-2:#4cf0ff; --danger:#ff6370; --ok:#7fffa0; --card:#0f1318;
+      --ring: 0 0 0 3px rgba(124,247,211,.25); --shadow: 0 10px 30px rgba(0,0,0,.35); --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Helvetica, Arial;color:var(--text);
+      background: radial-gradient(1200px 800px at 85% -10%, rgba(76,240,255,.15), transparent 60%) ,
+                  radial-gradient(1000px 900px at -20% 110%, rgba(124,247,211,.1), transparent 60%) , var(--bg);
+      display:flex; flex-direction:column;}
+    header{display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid rgba(255,255,255,.06);
+      background:linear-gradient(180deg, rgba(255,255,255,.02), transparent); position:sticky; top:0; z-index:10; backdrop-filter: blur(8px);}
+    .brand{display:flex; gap:12px; align-items:center}
+    .logo{width:38px; height:38px; border-radius:10px; background: conic-gradient(from 210deg, var(--brand), var(--brand-2), var(--brand));
+      filter:saturate(120%); box-shadow: 0 0 40px rgba(124,247,211,.25);}
+    h1{margin:0; font-size:20px; letter-spacing:.5px}
+    .sub{color:var(--muted); font-size:12px}
+    main{display:grid; grid-template-columns: 260px 1fr; gap:18px; width:100%; max-width:1200px; margin:24px auto; padding:0 16px}
+    nav{background:linear-gradient(180deg, var(--panel), var(--panel-2)); border:1px solid rgba(255,255,255,.06); border-radius: var(--radius); box-shadow: var(--shadow); padding:12px; position:sticky; top:84px; height: fit-content;}
+    .step{display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; cursor:pointer; color:var(--muted);}
+    .step:hover{background:rgba(255,255,255,.04); color:var(--text)}
+    .step.active{background:linear-gradient(180deg, rgba(124,247,211,.08), rgba(255,255,255,.02)); color:var(--text); outline: var(--ring);}
+    .step .n{width:28px; height:28px; display:grid; place-items:center; border-radius:8px; background:rgba(124,247,211,.12); color:var(--brand); font-weight:700;}
+    section.view{background:linear-gradient(180deg, var(--panel), var(--panel-2)); border:1px solid rgba(255,255,255,.06); border-radius: var(--radius); box-shadow: var(--shadow); padding:18px; min-height:520px;}
+    .hero{margin-top: 10px; display:flex; gap:18px; align-items:center; justify-content:space-between; padding:14px 16px; border:1px solid rgba(255,255,255,.08); border-radius:12px; background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));}
+    .grid{display:grid; gap:14px}
+    .grid.cols-2{grid-template-columns: repeat(2, minmax(0,1fr));}
+    @media (max-width: 900px){ main{grid-template-columns:1fr} .grid.cols-2{grid-template-columns:1fr} nav{position:static} }
+    .card{background: linear-gradient(180deg, var(--card), transparent); border:1px solid rgba(255,255,255,.06); border-radius: 14px; padding:14px;}
+    .title{font-size:16px; font-weight:700; margin:0 0 6px}
+    .muted{color:var(--muted); font-size:13px}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; white-space:pre-wrap}
+    .list{max-height:240px; overflow:auto; padding:8px; border-radius:10px; background:rgba(255,255,255,.03); border:1px dashed rgba(255,255,255,.08)}
+    label{display:block; font-size:12px; color:var(--muted); margin:6px 2px}
+    input, textarea, select, button{width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:#0b0f13; color:var(--text); outline:none; transition: .2s ease;}
+    input:focus, textarea:focus, select:focus{ box-shadow: var(--ring); border-color: rgba(124,247,211,.5) }
+    textarea{min-height:120px; resize:vertical}
+    .row{display:flex; gap:10px; align-items:center}
+    .row > *{flex:1}
+    .btn{background:linear-gradient(180deg, var(--brand), var(--brand-2)); color:#04231f; font-weight:800; text-transform:uppercase; letter-spacing: .5px; border:none; cursor:pointer;}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
+    .btn.secondary{ background:linear-gradient(180deg, #2b313a, #1f242b); color:var(--text); border:1px solid rgba(255,255,255,.12) }
+    .pill{display:inline-block; padding:4px 10px; border-radius:999px; background:rgba(124,247,211,.12); color:var(--brand); font-weight:700; font-size:12px}
+    .toast{position:fixed; right:18px; bottom:18px; background:#0b0f13; border:1px solid rgba(255,255,255,.12); padding:12px 14px; border-radius:12px; box-shadow: var(--shadow); display:none;}
+    .empty{display:grid; place-items:center; padding:30px; text-align:center; border-radius:12px; background:rgba(255,255,255,.03); border:1px dashed rgba(255,255,255,.08)}
+    .kbd{background:#11161c; border:1px solid rgba(255,255,255,.12); border-bottom-color:rgba(255,255,255,.2); padding:2px 6px; border-radius:6px; font-family:ui-monospace; font-size:12px;}
+    .badge{display:inline-flex; align-items:center; gap:6px; padding:6px 8px; background:#0c1116;border:1px solid rgba(255,255,255,.08); border-radius:999px}
+    .dot{width:8px; height:8px; border-radius:99px; background:var(--ok); box-shadow:0 0 10px rgba(127,255,160,.8)}
+    .diag{margin-top:8px; font-size:12px; color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Secure Messenger</h1>
+        <div class="sub">Modo simples e explicado • v2</div>
+      </div>
+    </div>
+    <div class="badge" id="badge-ca"><span class="dot"></span><span>CA pronta?</span></div>
+  </header>
+
+  <main>
+    <nav aria-label="Passo a passo">
+      <div class="step active" data-step="setup"><div class="n">1</div><div>Preparar o terreno<div class="sub">Criar mini-CA</div></div></div>
+      <div class="step" data-step="users"><div class="n">2</div><div>Usuários<div class="sub">Criar pessoas</div></div></div>
+      <div class="step" data-step="send"><div class="n">3</div><div>Enviar<div class="sub">Mensagem segura</div></div></div>
+      <div class="step" data-step="inbox"><div class="n">4</div><div>Inbox<div class="sub">Ler mensagem</div></div></div>
+      <div class="step" data-step="audit"><div class="n">5</div><div>Auditoria<div class="sub">Eventos</div></div></div>
+      <div class="card" style="margin-top:10px">
+        <div class="title">Diagnóstico rápido</div>
+        <button class="btn secondary" id="btnPing">Testar API</button>
+        <div class="diag" id="diag"></div>
+      </div>
+    </nav>
+
+    <section class="view" id="view">
+      <div class="grid" data-panel="setup">
+        <div class="hero">
+          <div>
+            <div class="title">1) Preparar o terreno</div>
+            <div class="muted">Clique para criar a mini-CA (o “cartório” das chaves).</div>
+          </div>
+          <div style="min-width:200px"><button class="btn" id="btnInit">Inicializar CA</button></div>
+        </div>
+      </div>
+
+      <div class="grid" data-panel="users" hidden>
+        <div class="hero">
+          <div>
+            <div class="title">2) Criar usuários</div>
+            <div class="muted">Crie Alice, Bob, Carol…</div>
+          </div>
+          <div class="row" style="min-width:360px">
+            <input id="newUser" placeholder="Nome do usuário (ex.: Alice)" aria-label="Nome do usuário">
+            <button class="btn" id="btnAddUser">Criar usuário</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="title">Lista</div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn secondary" id="btnReloadUsers">Atualizar</button>
+            <span id="userCount" class="pill">0 usuários</span>
+          </div>
+          <div id="users" class="list mono" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <div class="grid" data-panel="send" hidden>
+        <div class="hero">
+          <div>
+            <div class="title">3) Enviar mensagem segura</div>
+            <div class="muted">AES tranca o texto, RSA tranca a chave do AES, e assinatura prova quem enviou.</div>
+          </div>
+        </div>
+        <div class="grid cols-2">
+          <div class="card">
+            <label>Remetente</label><input id="sender" placeholder="Ex.: Alice">
+            <label>Destinatários (vírgula)</label><input id="recipients" placeholder="Ex.: Bob, Carol">
+            <label>Assunto</label><input id="subject" placeholder="Ex.: Segredo #1">
+            <label>Corpo</label><textarea id="body" placeholder="Digite sua mensagem..."></textarea>
+            <div class="row">
+              <button class="btn" id="btnSend">Enviar</button>
+              <button class="btn secondary" id="btnExample">Exemplo</button>
+            </div>
+            <div class="muted" id="sendStatus" style="margin-top:6px"></div>
+          </div>
+          <div class="card">
+            <div class="title">Dicas</div>
+            <div class="muted">Se aparecer erro aqui, veja o painel “Diagnóstico rápido”.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" data-panel="inbox" hidden>
+        <div class="hero">
+          <div>
+            <div class="title">4) Inbox & Leitura</div>
+            <div class="muted">Veja mensagens e abra uma por ID.</div>
+          </div>
+        </div>
+        <div class="grid cols-2">
+          <div class="card">
+            <div class="row">
+              <div><label>Usuário</label><input id="inboxUser" placeholder="Ex.: Bob"></div>
+              <div style="align-self:flex-end"><button class="btn" id="btnInbox">Listar inbox</button></div>
+            </div>
+            <div id="inbox" class="list mono" style="margin-top:8px"></div>
+          </div>
+          <div class="card">
+            <div class="row">
+              <div><label>ID da mensagem</label><input id="readId" placeholder="Ex.: 1"></div>
+              <div><label>Ler como</label><input id="readUser" placeholder="Ex.: Bob"></div>
+              <div style="align-self:flex-end"><button class="btn secondary" id="btnRead">Ler</button></div>
+            </div>
+            <div id="readOut" class="list mono" style="margin-top:8px; min-height:120px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid" data-panel="audit" hidden>
+        <div class="hero">
+          <div><div class="title">5) Auditoria</div><div class="muted">Log assinado pela mini-CA.</div></div>
+          <div class="row" style="min-width:360px">
+            <button class="btn secondary" id="btnAudit">Listar eventos</button>
+            <button class="btn" id="btnAuditVerify">Verificar assinatura</button>
+          </div>
+        </div>
+        <div id="auditOut" class="list mono"></div>
+      </div>
+
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  // Helper selectors (robust: check existence)
+  const $ = (id)=>document.getElementById(id);
+  const must = (id)=>{ const el=$(id); if(!el) throw new Error("Elemento não encontrado: #"+id); return el; };
+
+  // Diagnostic: show API base and first request result
+  const apiBase = window.location.origin; // same host/port
+  function diag(msg){ const d = must("diag"); d.textContent = (d.textContent? d.textContent+"\n":"")+ msg; }
+
+  async function api(path, opts){
+    try{
+      const r = await fetch(path, opts);
+      if(!r.ok){ const t = await r.text(); throw new Error(t || r.status); }
+      return await r.json();
+    }catch(e){
+      diag("Falha em "+path+": "+ e.message);
+      throw e;
+    }
+  }
+  function toast(msg){
+    const t = must("toast"); t.textContent = msg; t.style.display="block"; setTimeout(()=>t.style.display="none", 2500);
+  }
+
+  // Navigation handlers (defensive)
+  Array.from(document.querySelectorAll(".step")).forEach(s=>{
+    s.addEventListener("click", ()=>{
+      Array.from(document.querySelectorAll(".step")).forEach(x=>x.classList.remove("active"));
+      s.classList.add("active");
+      const k = s.getAttribute("data-step");
+      Array.from(document.querySelectorAll("[data-panel]")).forEach(p=> p.hidden = (p.getAttribute("data-panel") !== k));
+    });
+  });
+
+  // CA badge
+  async function refreshCABadge(){
+    try{
+      await api("/users");
+      must("badge-ca").innerHTML = `<span class="dot"></span><span>CA pronta ✅</span>`;
+    }catch(e){
+      must("badge-ca").innerHTML = `<span class="dot" style="background:${'var(--danger)'};box-shadow:none"></span><span>CA não inicializada</span>`;
+    }
+  }
+  refreshCABadge();
+
+  // Setup
+  must("btnInit").addEventListener("click", async ()=>{
+    try{ await api("/init-ca",{method:"POST"}); toast("Mini-CA pronta! 🎉"); refreshCABadge(); }
+    catch(e){ toast("Erro: "+e.message); }
+  });
+
+  // Users
+  must("btnAddUser").addEventListener("click", async ()=>{
+    const name = must("newUser").value.trim();
+    if(!name){ toast("Digite um nome 😉"); return; }
+    try{
+      await api("/users",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({name})});
+      must("newUser").value="";
+      toast("Usuário criado: "+name);
+      loadUsers();
+    }catch(e){ toast("Erro: "+e.message) }
+  });
+  must("btnReloadUsers").addEventListener("click", ()=> loadUsers());
+  async function loadUsers(){
+    try{
+      const j = await api("/users");
+      const list = (j.users||[]);
+      must("userCount").textContent = `${list.length} usuário(s)`;
+      must("users").textContent = list.length? list.join("\n") : "Nenhum usuário ainda. Crie um na etapa 2.";
+    }catch(e){ must("users").textContent = "Erro: "+e.message; }
+  }
+  loadUsers();
+
+  // Send
+  must("btnExample").addEventListener("click", ()=>{
+    must("sender").value = "Alice";
+    must("recipients").value = "Bob, Carol";
+    must("subject").value = "Segredo #1";
+    must("body").value = "Eu gosto de criptografia porque ela protege a gente 🌟";
+  });
+  must("btnSend").addEventListener("click", async ()=>{
+    const sender = must("sender").value.trim();
+    const to = must("recipients").value.split(",").map(s=>s.trim()).filter(Boolean);
+    const subject = must("subject").value.trim();
+    const body = must("body").value;
+    must("sendStatus").textContent = "Enviando…";
+    try{
+      const j = await api("/send",{method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({sender, to, subject, body})});
+      must("sendStatus").textContent = "Enviado! ID="+j.message_id;
+      toast("Mensagem enviada ✔");
+    }catch(e){
+      must("sendStatus").textContent = "Erro: "+e.message;
+      toast("Erro: "+e.message);
+    }
+  });
+
+  // Inbox + Read
+  must("btnInbox").addEventListener("click", async ()=>{
+    const user = must("inboxUser").value.trim();
+    if(!user){ toast("Informe o usuário 😉"); return; }
+    try{
+      const j = await api("/inbox/"+encodeURIComponent(user));
+      if(!j.inbox || j.inbox.length===0){ must("inbox").innerHTML = `<div class="empty">Inbox vazia para <b>${user}</b></div>`; return; }
+      must("inbox").textContent = j.inbox.map(r=>`#${r.id}  ${new Date(r.timestamp*1000).toLocaleString()}  ${r.sender} — ${r.subject}`).join("\n");
+    }catch(e){ must("inbox").textContent = "Erro: "+e.message; }
+  });
+  must("btnRead").addEventListener("click", async ()=>{
+    const id = must("readId").value.trim();
+    const user = must("readUser").value.trim();
+    if(!id || !user){ toast("Preencha ID e usuário 😉"); return; }
+    try{
+      const j = await api(`/read/${encodeURIComponent(user)}/${encodeURIComponent(id)}`);
+      const meta = JSON.stringify(j.meta,null,2);
+      must("readOut").textContent = `${meta}\n\n${j.body}`;
+      toast(j.meta.signature_valid ? "Assinatura OK ✅" : "Assinatura inválida ❌");
+    }catch(e){
+      must("readOut").textContent = "Erro: "+e.message;
+      toast("Erro: "+e.message);
+    }
+  });
+
+  // Audit
+  must("btnAudit").addEventListener("click", async ()=>{
+    try{ const j = await api("/audit"); must("auditOut").textContent = JSON.stringify(j.audit,null,2) || "Sem eventos." }
+    catch(e){ must("auditOut").textContent = "Erro: "+e.message }
+  });
+  must("btnAuditVerify").addEventListener("click", async ()=>{
+    try{ const j = await api("/audit/verify"); must("auditOut").textContent = "Audit íntegro e assinado? "+j.ok; toast(j.ok? "Audit OK ✅":"Audit falhou ❌") }
+    catch(e){ must("auditOut").textContent = "Erro: "+e.message }
+  });
+
+  // Ping button
+  must("btnPing").addEventListener("click", async ()=>{
+    must("diag").textContent = `Base: ${apiBase}`;
+    try{
+      const users = await api("/users");
+      diag("GET /users ✓ " + JSON.stringify(users));
+      try{
+        const audit = await api("/audit");
+        diag("GET /audit ✓ " + (audit.audit? audit.audit.length : 0) + " eventos");
+      }catch(e){ /* already logged */ }
+    }catch(e){
+      diag("Falha ao falar com a API. Verifique se o backend está rodando na mesma porta/host.");
+    }
+  });
+
+  // Safety: warn if script errors occur
+  window.addEventListener("error", (ev)=>{ diag("JS error: "+ev.message); });
+})();</script>
+</body>
+</html>
