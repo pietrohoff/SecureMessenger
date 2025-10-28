@@ -145,17 +145,6 @@ http://localhost:8000
 
 ```
 SecureMessenger/
-├── app/
-│   ├── main.py              # FastAPI (rotas e endpoints)
-│   ├── secure_core.py       # Lógica criptográfica principal
-│   ├── templates/
-│   │   └── index.html       # Interface web
-│   └── database.db          # Banco SQLite
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
-
-SecureMessenger/
 ├── app/                          # (reservado p/ assets/auxiliares, conforme evolução)
 │    ├── core/                    # módulos auxiliares (ex.: utilidades, validações)
 │    │   └── secure_core.py       # núcleo criptográfico (RSA, AES-GCM, X.509)
